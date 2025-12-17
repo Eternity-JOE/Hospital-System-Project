@@ -187,6 +187,26 @@ views/patient/index.vue  → views/doctor/index.vue
    → 检查 `application.yml` 中数据库密码
 
 
+### ✅ 4️⃣ 怎么更改数据库？
+
+**操作流程：**
+
+**保留原文件： ** query.sql 留在那里不动，仅用于第一次搭建环境。
+
+**新建补丁文件：**
+
+如果队友 B 要写医生模块，需要建一张 doctor 表。
+
+不要动别人的文件，而是新建一个文件：sql/doctor_table.sql。
+
+如果队友 C 发现 patient 表少了个“身份证号”字段，需要加一列。
+
+新建一个文件：sql/update_patient_idcard.sql (里面写 ALTER TABLE)。
+
+执行： 大家都只运行自己缺的那个 .sql 文件。
+
+优点： 历史清晰，不会覆盖数据，不会打架。
+
 
 ## 📅 任务分配
 
