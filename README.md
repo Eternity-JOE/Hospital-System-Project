@@ -52,7 +52,7 @@
 启动 MySQL，创建数据库：
 
 ```sql
-CREATE DATABASE hospital
+CREATE DATABASE hospital_db
 DEFAULT CHARACTER SET utf8mb4
 COLLATE utf8mb4_unicode_ci;
 ```
@@ -60,9 +60,23 @@ COLLATE utf8mb4_unicode_ci;
 然后在 **`backend/src/main/resources/application.yml`** 中
 修改你本地的数据库用户名和密码。
 
+### 2️⃣ 初始化数据库表
+
+进入 MySQL 命令行，执行整合脚本（推荐）：
+
+> ⚠️ 注意：后续组员增加新的数据表后需要把 SQL 文件信息同步在init_all.sql中。
+
+```sql
+-- 先打开 sql/init_all.sql，将里面的路径替换成你本地的完整路径
+-- 然后在 MySQL 命令行执行：
+source 你的完整路径/sql/init_all.sql
+```
+
+> ⚠️ 注意：每个组员拉取代码后都需要执行这些 SQL 文件，数据库数据不会跟随 Git 同步。
 
 
-### 2️⃣ 启动后端（Backend）
+
+### 3️⃣ 启动后端（Backend）
 
 1. 使用 **IntelliJ IDEA** 打开 `backend` 文件夹
    （建议以 **Maven 项目** 导入）
@@ -87,7 +101,7 @@ http://localhost:8080
 
 
 
-### 3️⃣ 启动前端（Frontend）
+### 4️⃣ 启动前端（Frontend）
 
 1. 使用 **VS Code** 打开 `frontend` 文件夹
 2. 打开终端，安装依赖：
@@ -117,20 +131,40 @@ Hospital-System-Project
 │   ├── src/main/java/com/example/hospital
 │   │   ├── config/          # 配置类 (CORS / Swagger 等)
 │   │   ├── controller/      # 控制层 (API 接口)
+│   │   │   ├── PatientController.java
+│   │   │   ├── DepartmentController.java
+│   │   │   └── RegistrationController.java
 │   │   ├── entity/          # 实体类 (数据库表映射)
+│   │   │   ├── Patient.java
+│   │   │   ├── Department.java
+│   │   │   ├── Registration.java
+│   │   │   └── PatientRecord.java
 │   │   ├── mapper/          # DAO 层 (MyBatis 接口)
 │   │   └── service/         # 业务逻辑层
+│   │       └── PriorityCalculator.java  # 优先级调度算法
 │   └── src/main/resources
-│       └── application.yml # 核心配置文件
+│       └── application.yml  # 核心配置文件
 │
-└── frontend/                # 前端代码 (Vue 3)
-    ├── src
-    │   ├── api/             # API 请求封装 (如 patient.js)
-    │   ├── utils/           # 工具类 (request.js 拦截器)
-    │   └── views/           # 页面视图
-    │       └── patient/
-    │           └── index.vue
-    └── package.json
+├── frontend/                # 前端代码 (Vue 3)
+│   ├── src
+│   │   ├── api/             # API 请求封装
+│   │   │   ├── patient.js
+│   │   │   ├── department.js
+│   │   │   └── registration.js
+│   │   ├── utils/           # 工具类 (request.js 拦截器)
+│   │   └── views/           # 页面视图
+│   │       ├── patient/     # 病人管理
+│   │       ├── department/  # 科室管理
+│   │       └── registration/# 挂号管理
+│   └── package.json
+│
+├── sql/                     # 数据库脚本
+│   ├── init_all.sql             # 整合初始化脚本（推荐）
+│   ├── registration_tables.sql  # 科室表、挂号表、患者信誉表
+│   ├── patient_table.sql        # 病人表
+│   └── doctor_table.sql         # 医生表
+│
+└── 挂号模块说明文档.md       # 挂号模块技术文档
 ```
 
 
@@ -212,10 +246,11 @@ views/patient/index.vue  → views/doctor/index.vue
 
 * [x] 基础架构搭建（Member A）✅
 * [x] 病人管理模块（Member A）✅
-* [ ] 医生管理模块（Member B）🚧
-* [ ] 挂号 / 排班模块（Member C）🕒
+* [x] 科室管理模块（Member B）✅
+* [x] 挂号管理模块（Member B）✅  
+* [ ] 医生管理模块（Member C）🚧
 * [ ] 药品 / 收费模块（Member D）🕒
-* [ ] 系统登录 / 权限模块（Member E）🕒
+* [ ] 系统登录（Member E）🕒
 
 
 
