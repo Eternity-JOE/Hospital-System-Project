@@ -1,0 +1,16 @@
+server:
+  port: 8080 # ????
+
+spring:
+  datasource:
+    driver-class-name: com.mysql.jdbc.Driver
+    # ?????? hospital_db ????????
+    url: jdbc:mysql://localhost:3306/hospital_db?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8
+    username: root
+    password: 123456
+
+mybatis:
+  # ?? SQL ???????
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  mapper-locations: classpath:mapper/*.xml
