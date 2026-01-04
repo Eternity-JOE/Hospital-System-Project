@@ -26,6 +26,12 @@
           <el-menu-item index="/registration">
             <el-icon><Ticket /></el-icon> <span>挂号大厅</span>
           </el-menu-item>
+          <el-menu-item index="/medicine">
+            <el-icon><Box /></el-icon> <span>药品管理</span>
+          </el-menu-item>
+          <el-menu-item index="/bill">
+            <el-icon><CreditCard /></el-icon> <span>收费管理</span>
+          </el-menu-item>
         </el-menu>
       </el-aside>
       
