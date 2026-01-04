@@ -28,3 +28,6 @@ source E:/java web final project/Hospital-System-Project-master/Hospital-System-
 
 -- 5. 为医生表添加排班字段
 source E:/java web final project/Hospital-System-Project-master/Hospital-System-Project-master/sql/update_doctor_schedule.sql
+  
+-- 6. 创建药品表、收费表 + 测试数据
+source E:/java web final project/Hospital-System-Project-master/Hospital-System-Project-master/sql/medicine_billing_table.sql
