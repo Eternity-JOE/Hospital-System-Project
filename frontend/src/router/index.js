@@ -44,6 +44,18 @@ const router = createRouter({
           name: 'Registration',
           component: () => import('../views/registration/index.vue'),
           meta: { title: '挂号大厅' }
+        },
+        {
+          path: 'medicine',
+          name: 'Medicine',
+          component: () => import('../views/medicine/index.vue'),
+          meta: { title: '药品管理' }
+        },
+        {
+          path: 'bill',
+          name: 'Bill',
+          component: () => import('../views/bill/index.vue'),
+          meta: { title: '收费管理' }
         }
       ]
     }
