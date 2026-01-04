@@ -11,23 +11,36 @@ SET NAMES utf8mb4;
 USE hospital_db;
 
 -- =====================================================
+-- 删除已有表（按外键依赖顺序，先删子表再删主表）
+-- =====================================================
+DROP TABLE IF EXISTS `bill`;
+DROP TABLE IF EXISTS `medicine`;
+DROP TABLE IF EXISTS `sys_doctor_disease`;
+DROP TABLE IF EXISTS `sys_disease`;
+DROP TABLE IF EXISTS `sys_registration`;
+DROP TABLE IF EXISTS `sys_patient_record`;
+DROP TABLE IF EXISTS `sys_doctor`;
+DROP TABLE IF EXISTS `sys_patient`;
+DROP TABLE IF EXISTS `sys_department`;
+
+-- =====================================================
 -- 请将下面的路径替换成你本地的完整路径
 -- =====================================================
 
 -- 1. 创建科室表、挂号表、患者信誉表 + 科室测试数据
-source E:/java web final project/Hospital-System-Project-master/Hospital-System-Project-master/sql/registration_tables.sql
+source E:/github/Hospital-System-Project/sql/registration_tables.sql
 
 -- 2. 创建病人表 + 病人测试数据
-source E:/java web final project/Hospital-System-Project-master/Hospital-System-Project-master/sql/patient_table.sql
+source E:/github/Hospital-System-Project/sql/patient_table.sql
 
 -- 3. 创建医生表 + 医生测试数据
-source E:/java web final project/Hospital-System-Project-master/Hospital-System-Project-master/sql/doctor_table.sql
+source E:/github/Hospital-System-Project/sql/doctor_table.sql
 
 -- 4. 创建病种表和医生-病种关联表 + 病种测试数据
-source E:/java web final project/Hospital-System-Project-master/Hospital-System-Project-master/sql/disease_table.sql
+source E:/github/Hospital-System-Project/sql/disease_table.sql
 
 -- 5. 为医生表添加排班字段
-source E:/java web final project/Hospital-System-Project-master/Hospital-System-Project-master/sql/update_doctor_schedule.sql
+source E:/github/Hospital-System-Project/sql/update_doctor_schedule.sql
   
 -- 6. 创建药品表、收费表 + 测试数据
-source E:/java web final project/Hospital-System-Project-master/Hospital-System-Project-master/sql/medicine_billing_table.sql
+source E:/github/Hospital-System-Project/sql/medicine_billing_table.sql
