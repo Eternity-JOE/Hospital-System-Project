@@ -25,25 +25,12 @@ service.interceptors.request.use(
 // 3. 响应拦截器 (收到结果后做的事)
 service.interceptors.response.use(
   response => {
-// ... 前面的代码
-      const res = response.data
-
-      // 👇 修改这里！兼容字符串 "200" 和数字 200
-      // 如果 code 不等于 "200" 且不等于 200，才算错
-      if (res.code !== '200' && res.code !== 200) {
-
-          // ... 这里是报错处理逻辑 (Message.error 等)
-          return Promise.reject(new Error(res.msg || 'Error'))
-
-      } else {
-          // 🟢 如果是 200，直接把数据放行！
-          return res
-      }
-      // ... 后面的代码
+    // 直接返回响应数据，让业务代码自己判断 code
+    return response.data
   },
   error => {
     console.log('err' + error)
-    ElMessage.error(error.message)
+    ElMessage.error('网络异常，请稍后重试')
     return Promise.reject(error)
   }
 )

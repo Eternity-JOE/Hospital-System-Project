@@ -2,12 +2,8 @@ package com.example.hospital.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.example.hospital.common.Result;
-import com.example.hospital.entity.Patient;
-import com.example.hospital.entity.PatientRecord;
-import com.example.hospital.entity.Registration;
-import com.example.hospital.mapper.PatientMapper;
-import com.example.hospital.mapper.PatientRecordMapper;
-import com.example.hospital.mapper.RegistrationMapper;
+import com.example.hospital.entity.*;
+import com.example.hospital.mapper.*;
 import com.example.hospital.service.PriorityCalculator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -35,6 +31,12 @@ public class RegistrationController {
     @Autowired
     private PriorityCalculator priorityCalculator;
     
+    @Autowired
+    private DoctorMapper doctorMapper;
+    
+    @Autowired
+    private DepartmentMapper departmentMapper;
+    
     /** 每个时段最大挂号数 */
     private static final int MAX_SLOT_CAPACITY = 30;
 
@@ -44,6 +46,23 @@ public class RegistrationController {
     @GetMapping("/list")
     public Result<?> list() {
         List<Registration> list = registrationMapper.selectRegistrationList();
+        
+        // 补充医生名称和科室名称
+        for (Registration reg : list) {
+            if (reg.getDoctorId() != null) {
+                Doctor doctor = doctorMapper.selectById(reg.getDoctorId());
+                if (doctor != null) {
+                    reg.setDoctorName(doctor.getName());
+                }
+            }
+            if (reg.getDepartmentId() != null) {
+                Department dept = departmentMapper.selectById(reg.getDepartmentId());
+                if (dept != null) {
+                    reg.setDepartmentName(dept.getName());
+                }
+            }
+        }
+        
         return Result.success(list);
     }
     

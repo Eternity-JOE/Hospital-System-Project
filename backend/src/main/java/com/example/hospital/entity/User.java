@@ -6,21 +6,13 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
 @Data
-@TableName("sys_disease")
-public class Disease {
+@TableName("sys_user")
+public class User {
     @TableId(type = IdType.AUTO)
     private Integer id;
-    
-    private String name;
-    
-    private String code;
-    
-    private String description;
-    
-    private String category;
-    
-    private Integer departmentId;
-    
+    private String username;
+    private String password;
+    private String role;      // admin, doctor, patient
+    private Integer refId;    // 关联的医生或病人ID
     private Integer status;
 }
-

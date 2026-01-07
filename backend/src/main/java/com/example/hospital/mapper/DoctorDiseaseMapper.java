@@ -19,6 +19,18 @@ public interface DoctorDiseaseMapper extends BaseMapper<DoctorDisease> {
     List<Integer> selectDiseaseIdsByDoctorId(@Param("doctorId") Integer doctorId);
     
     /**
+     * 根据医生ID查询关联的病种ID列表（别名）
+     */
+    @Select("SELECT disease_id FROM sys_doctor_disease WHERE doctor_id = #{doctorId}")
+    List<Integer> findDiseaseIdsByDoctorId(@Param("doctorId") Integer doctorId);
+    
+    /**
+     * 根据病种ID查询关联的医生ID列表
+     */
+    @Select("SELECT doctor_id FROM sys_doctor_disease WHERE disease_id = #{diseaseId}")
+    List<Integer> findDoctorIdsByDiseaseId(@Param("diseaseId") Integer diseaseId);
+    
+    /**
      * 根据医生ID删除所有关联关系
      */
     @Delete("DELETE FROM sys_doctor_disease WHERE doctor_id = #{doctorId}")

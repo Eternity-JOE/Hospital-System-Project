@@ -47,11 +47,17 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="patientType" label="患者类型" align="center" width="100">
+        <el-table-column label="患者年龄" align="center" width="100">
           <template #default="scope">
-            <span>{{ patientTypeMap[scope.row.patientType] || '普通' }}</span>
+            <span>{{ getAgeCategory(scope.row.patientType) }}</span>
           </template>
         </el-table-column>
+        <el-table-column label="军人" align="center" width="70">
+          <template #default="scope">
+            <span>{{ (scope.row.patientType & 2) !== 0 ? '是' : '否' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="doctorName" label="医生" align="center" width="100" />
         <el-table-column prop="isReturn" label="复诊" align="center" width="70">
           <template #default="scope">
             <el-tag v-if="scope.row.isReturn === 1" type="warning" size="small">复诊</el-tag>
@@ -127,17 +133,11 @@
             <el-radio :label="2">急诊</el-radio>
           </el-radio-group>
         </el-form-item>
-        <el-form-item label="患者类型" prop="patientType">
-          <el-select v-model="form.patientType" style="width: 100%">
-            <el-option label="普通" :value="0" />
-            <el-option label="军人" :value="1" />
-            <el-option label="老人(≥65岁)" :value="2" />
-            <el-option label="儿童(≤14岁)" :value="3" />
-          </el-select>
+        <el-form-item label="军人">
+          <el-switch v-model="form.isMilitary" :active-value="1" :inactive-value="0" />
         </el-form-item>
         <el-form-item label="是否复诊">
           <el-switch v-model="form.isReturn" :active-value="1" :inactive-value="0" />
-          <span style="margin-left: 10px; color: #909399; font-size: 12px;">系统会自动检测</span>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -199,7 +199,7 @@ import { Plus, List } from '@element-plus/icons-vue'
 import { getRegistrationList, addRegistration, updateRegistration, cancelRegistration, completeRegistration, markNoShow, deleteRegistration, getQueue, getSlots } from '@/api/registration'
 import { getDepartmentList } from '@/api/department'
 import { getPatientList } from '@/api/patient'
-import { getDoctorsByDepartment } from '@/api/doctor'
+import { getDoctorList, getDoctorsByDepartment } from '@/api/doctor'
 
 const loading = ref(false)
 const dialogVisible = ref(false)
@@ -242,7 +242,7 @@ const form = reactive({
   appointmentDate: '',
   timeSlot: 'AM',
   registrationType: 1,
-  patientType: 0,
+  isMilitary: 0,
   isReturn: 0
 })
 
@@ -261,13 +261,20 @@ const getPriorityType = (score) => {
   return ''
 }
 
+const getAgeCategory = (patientType) => {
+  if ((patientType & 4) !== 0) return '老人'
+  if ((patientType & 8) !== 0) return '小孩'
+  return '成年人'
+}
+
 const getPriorityDesc = (row) => {
   const parts = []
   if (row.registrationType === 2) parts.push('急诊+1000')
-  if (row.patientType === 1) parts.push('军人+200')
-  if (row.patientType === 2) parts.push('老人+150')
-  if (row.patientType === 3) parts.push('儿童+150')
-  if (row.isReturn === 1) parts.push('复诊+100')
+  // 使用位运算检查patient_type
+  if ((row.patientType & 2) !== 0) parts.push('军人+30')
+  if ((row.patientType & 4) !== 0) parts.push('老人+20')
+  if ((row.patientType & 8) !== 0) parts.push('儿童+15')
+  if (row.isReturn === 1) parts.push('复诊+50')
   return parts.length ? parts.join(', ') : '基础分100'
 }
 
@@ -275,7 +282,8 @@ const getList = async () => {
   loading.value = true
   try {
     const res = await getRegistrationList()
-    allTableData.value = res.data || []
+    const data = res.data || []
+    allTableData.value = data
     handlePageChange()
   } finally {
     loading.value = false
@@ -324,6 +332,8 @@ const handleEdit = (row) => {
   resetForm()
   dialogTitle.value = '编辑挂号'
   Object.assign(form, row)
+  // 从patientType中提取军人标记
+  form.isMilitary = (row.patientType & 2) !== 0 ? 1 : 0
   loadSlots()
   dialogVisible.value = true
 }
@@ -331,11 +341,33 @@ const handleEdit = (row) => {
 const submitForm = () => {
   formRef.value.validate(async (valid) => {
     if (valid) {
+      // 根据患者年龄自动计算patient_type
+      const patient = patientList.value.find(p => p.id === form.patientId)
+      let patientType = 0
+      
+      if (patient && patient.age) {
+        if (patient.age >= 65) {
+          patientType |= 4  // 老人
+        } else if (patient.age <= 14) {
+          patientType |= 8  // 儿童
+        }
+      }
+      
+      // 添加军人标记
+      if (form.isMilitary === 1) {
+        patientType |= 2  // 军人
+      }
+      
+      const submitData = {
+        ...form,
+        patientType: patientType
+      }
+      
       if (form.id) {
-        await updateRegistration(form)
+        await updateRegistration(submitData)
         ElMessage.success('修改成功')
       } else {
-        await addRegistration(form)
+        await addRegistration(submitData)
         ElMessage.success('挂号成功')
       }
       dialogVisible.value = false
@@ -404,7 +436,7 @@ const resetForm = () => {
   form.appointmentDate = ''
   form.timeSlot = 'AM'
   form.registrationType = 1
-  form.patientType = 0
+  form.isMilitary = 0
   form.isReturn = 0
   slotsInfo.value = {}
   doctorList.value = []
@@ -412,9 +444,10 @@ const resetForm = () => {
 }
 
 const loadBaseData = async () => {
-  const [deptRes, patientRes] = await Promise.all([getDepartmentList(), getPatientList()])
+  const [deptRes, patientRes, doctorRes] = await Promise.all([getDepartmentList(), getPatientList(), getDoctorList()])
   departmentList.value = deptRes.data || []
   patientList.value = patientRes.data || []
+  doctorList.value = doctorRes.data || []
 }
 
 onMounted(() => {

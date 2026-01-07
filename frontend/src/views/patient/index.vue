@@ -81,6 +81,17 @@
           :rules="rules"
           label-width="80px"
       >
+        <!-- 新增时显示账号密码 -->
+        <template v-if="!form.id">
+          <el-divider content-position="left">登录账号</el-divider>
+          <el-form-item label="账号" prop="username">
+            <el-input v-model="form.username" placeholder="请设置登录账号" />
+          </el-form-item>
+          <el-form-item label="密码" prop="password">
+            <el-input v-model="form.password" type="password" placeholder="请设置登录密码" show-password />
+          </el-form-item>
+          <el-divider content-position="left">基本信息</el-divider>
+        </template>
         <el-form-item label="姓名" prop="name">
           <el-input v-model="form.name" placeholder="请输入病人姓名" />
         </el-form-item>
@@ -141,10 +152,20 @@ const form = reactive({
   gender: '男',
   age: 18,
   phone: '',
-  address: ''
+  address: '',
+  username: '',
+  password: ''
 })
 
 const rules = {
+  username: [
+    { required: true, message: '请输入账号', trigger: 'blur' },
+    { min: 3, max: 20, message: '账号长度为3-20个字符', trigger: 'blur' }
+  ],
+  password: [
+    { required: true, message: '请输入密码', trigger: 'blur' },
+    { min: 6, max: 20, message: '密码长度为6-20个字符', trigger: 'blur' }
+  ],
   name: [{ required: true, message: '请输入姓名', trigger: 'blur' }],
   phone: [
     { required: true, message: '请输入手机号', trigger: 'blur' },
@@ -261,6 +282,8 @@ const resetForm = () => {
   form.age = 18
   form.phone = ''
   form.address = ''
+  form.username = ''
+  form.password = ''
   if (formRef.value) {
     formRef.value.clearValidate()
   }

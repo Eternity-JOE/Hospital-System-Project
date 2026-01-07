@@ -61,7 +61,6 @@
             <span v-if="!scope.row.diseaseIds || scope.row.diseaseIds.length === 0">-</span>
           </template>
         </el-table-column>
-        <el-table-column prop="schedule" label="排班时间" align="center" width="200" show-overflow-tooltip />
         <el-table-column prop="status" label="状态" align="center" width="100">
           <template #default="scope">
             <el-tag :type="scope.row.status === 1 ? 'success' : 'danger'">
@@ -107,6 +106,17 @@
           :rules="rules"
           label-width="100px"
       >
+        <!-- 新增时显示账号密码 -->
+        <template v-if="!form.id">
+          <el-divider content-position="left">登录账号</el-divider>
+          <el-form-item label="账号" prop="username">
+            <el-input v-model="form.username" placeholder="请设置登录账号" />
+          </el-form-item>
+          <el-form-item label="密码" prop="password">
+            <el-input v-model="form.password" type="password" placeholder="请设置登录密码" show-password />
+          </el-form-item>
+          <el-divider content-position="left">基本信息</el-divider>
+        </template>
         <el-form-item label="姓名" prop="name">
           <el-input v-model="form.name" placeholder="请输入医生姓名" />
         </el-form-item>
@@ -138,32 +148,23 @@
         <el-form-item label="关联病种" prop="diseaseIds">
           <el-select
               v-model="form.diseaseIds"
-              placeholder="请选择病种（最多选择3个）"
+              :placeholder="form.departmentId ? '请选择病种（最多选择3个）' : '请先选择科室'"
               multiple
               filterable
               style="width: 100%"
               :max-collapse-tags="2"
+              :disabled="!form.departmentId"
               @change="handleDiseaseChange"
           >
             <el-option
-                v-for="disease in diseaseList"
+                v-for="disease in filteredDiseaseList"
                 :key="disease.id"
                 :label="disease.name"
                 :value="disease.id"
             />
           </el-select>
           <div style="color: #909399; font-size: 12px; margin-top: 5px;">
-            已选择 {{ form.diseaseIds ? form.diseaseIds.length : 0 }} 个病种（限制1-3个）
-          </div>
-        </el-form-item>
-        <el-form-item label="排班时间" prop="schedule">
-          <el-input
-              v-model="form.schedule"
-              placeholder="如：周一上午,周二下午,周三全天"
-              clearable
-          />
-          <div style="color: #909399; font-size: 12px; margin-top: 5px;">
-            格式：周一上午,周二下午,周三全天（用逗号分隔）
+            已选择 {{ form.diseaseIds ? form.diseaseIds.length : 0 }} 个病种（限制1-3个，仅显示当前科室病种）
           </div>
         </el-form-item>
         <el-form-item label="状态" prop="status">
@@ -184,7 +185,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, computed } from 'vue'
+import { ref, reactive, onMounted, computed, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, Plus, Edit, Delete } from '@element-plus/icons-vue'
 import { getDoctorList, addDoctor, updateDoctor, deleteDoctor } from '@/api/doctor'
@@ -205,8 +206,8 @@ const total = ref(0)
 
 // 科室列表（用于下拉选择）
 const departmentList = ref([])
-// 病种列表（用于下拉选择）
-const diseaseList = ref([])
+// 病种列表（全部病种）
+const allDiseaseList = ref([])
 
 const queryParams = reactive({
   pageNum: 1,
@@ -223,11 +224,33 @@ const form = reactive({
   phone: '',
   specialty: '',
   diseaseIds: [], // 关联的病种ID列表
-  schedule: '', // 排班时间
-  status: 1 // 1-在职，0-离职
+  status: 1, // 1-在职，0-离职
+  username: '',
+  password: ''
+})
+
+// 根据科室过滤后的病种列表
+const filteredDiseaseList = computed(() => {
+  if (!form.departmentId) return []
+  return allDiseaseList.value.filter(d => d.departmentId === form.departmentId)
+})
+
+// 监听科室变化，清空已选病种
+watch(() => form.departmentId, (newVal, oldVal) => {
+  if (oldVal !== undefined && newVal !== oldVal) {
+    form.diseaseIds = []
+  }
 })
 
 const rules = {
+  username: [
+    { required: true, message: '请输入账号', trigger: 'blur' },
+    { min: 3, max: 20, message: '账号长度为3-20个字符', trigger: 'blur' }
+  ],
+  password: [
+    { required: true, message: '请输入密码', trigger: 'blur' },
+    { min: 6, max: 20, message: '密码长度为6-20个字符', trigger: 'blur' }
+  ],
   name: [{ required: true, message: '请输入医生姓名', trigger: 'blur' }],
   title: [{ required: true, message: '请输入职称', trigger: 'blur' }],
   departmentId: [{ required: true, message: '请选择所属科室', trigger: 'change' }],
@@ -287,7 +310,7 @@ const loadDepartmentList = async () => {
 const loadDiseaseList = async () => {
   try {
     const res = await getDiseaseList()
-    diseaseList.value = res.data || []
+    allDiseaseList.value = res.data || []
   } catch (error) {
     console.error('获取病种列表失败', error)
   }
@@ -303,7 +326,7 @@ const getDepartmentName = (departmentId) => {
 // 5. 根据病种ID获取病种名称
 const getDiseaseName = (diseaseId) => {
   if (!diseaseId) return '-'
-  const disease = diseaseList.value.find(d => d.id === diseaseId)
+  const disease = allDiseaseList.value.find(d => d.id === diseaseId)
   return disease ? disease.name : '-'
 }
 
@@ -423,8 +446,9 @@ const resetForm = () => {
   form.phone = ''
   form.specialty = ''
   form.diseaseIds = []
-  form.schedule = ''
   form.status = 1
+  form.username = ''
+  form.password = ''
   if (formRef.value) {
     formRef.value.clearValidate()
   }

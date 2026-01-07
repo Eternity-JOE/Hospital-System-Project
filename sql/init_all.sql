@@ -13,6 +13,8 @@ USE hospital_db;
 -- =====================================================
 -- 删除已有表（按外键依赖顺序，先删子表再删主表）
 -- =====================================================
+DROP TABLE IF EXISTS `sys_user`;
+DROP TABLE IF EXISTS `sys_doctor_leave`;
 DROP TABLE IF EXISTS `bill`;
 DROP TABLE IF EXISTS `medicine`;
 DROP TABLE IF EXISTS `sys_doctor_disease`;
@@ -44,3 +46,12 @@ source E:/github/Hospital-System-Project/sql/update_doctor_schedule.sql
   
 -- 6. 创建药品表、收费表 + 测试数据
 source E:/github/Hospital-System-Project/sql/medicine_billing_table.sql
+
+-- 7. 创建用户登录表 + 测试账户数据
+source E:/github/Hospital-System-Project/sql/user_table.sql
+
+-- 8. 创建医生请假表
+source E:/github/Hospital-System-Project/sql/leave_table.sql
+
+-- 9. 初始化挂号数据（动态生成未来三天的数据）
+source E:/github/Hospital-System-Project/sql/init_registration_data.sql
