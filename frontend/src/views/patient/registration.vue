@@ -17,48 +17,61 @@
 
     <!-- 筛选条件 -->
     <el-card class="filter-card">
-      <el-form :inline="true">
-        <!-- 自由挂号：选科室 -->
-        <el-form-item v-if="mode === 'free'" label="选择科室">
-          <el-select v-model="filters.departmentId" placeholder="全部科室" clearable @change="loadDoctors">
-            <el-option v-for="d in departmentList" :key="d.id" :label="d.name" :value="d.id" />
-          </el-select>
-        </el-form-item>
-        
-        <!-- 精准挂号：选病种 -->
-        <el-form-item v-if="mode === 'target'" label="选择病种">
-          <el-select v-model="filters.diseaseId" placeholder="请选择病种" filterable @change="loadDoctors">
-            <el-option-group v-for="dept in groupedDiseases" :key="dept.id" :label="dept.name">
-              <el-option v-for="disease in dept.diseases" :key="disease.id" :label="disease.name" :value="disease.id" />
-            </el-option-group>
-          </el-select>
-        </el-form-item>
+      <el-form>
+        <el-row :gutter="20">
+          <!-- 自由挂号：选科室 -->
+          <el-col v-if="mode === 'free'" :xs="24" :sm="12" :md="6">
+            <el-form-item label="选择科室">
+              <el-select v-model="filters.departmentId" placeholder="全部科室" clearable @change="loadDoctors" style="width: 100%">
+                <el-option v-for="d in departmentList" :key="d.id" :label="d.name" :value="d.id" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          
+          <!-- 精准挂号：选病种 -->
+          <el-col v-if="mode === 'target'" :xs="24" :sm="12" :md="6">
+            <el-form-item label="选择病种">
+              <el-select v-model="filters.diseaseId" placeholder="请选择病种" filterable @change="loadDoctors" style="width: 100%">
+                <el-option-group v-for="dept in groupedDiseases" :key="dept.id" :label="dept.name">
+                  <el-option v-for="disease in dept.diseases" :key="disease.id" :label="disease.name" :value="disease.id" />
+                </el-option-group>
+              </el-select>
+            </el-form-item>
+          </el-col>
 
-        <el-form-item label="预约日期">
-          <el-date-picker
-            v-model="filters.date"
-            type="date"
-            placeholder="选择日期"
-            :disabled-date="disabledDate"
-            value-format="YYYY-MM-DD"
-            @change="loadDoctors"
-          />
-        </el-form-item>
+          <el-col :xs="24" :sm="12" :md="6">
+            <el-form-item label="预约日期">
+              <el-date-picker
+                v-model="filters.date"
+                type="date"
+                placeholder="选择日期"
+                :disabled-date="disabledDate"
+                value-format="YYYY-MM-DD"
+                @change="loadDoctors"
+                style="width: 100%"
+              />
+            </el-form-item>
+          </el-col>
 
-        <el-form-item label="时段">
-          <el-radio-group v-model="filters.timeSlot" @change="loadDoctors">
-            <el-radio-button label="AM">上午</el-radio-button>
-            <el-radio-button label="PM">下午</el-radio-button>
-          </el-radio-group>
-        </el-form-item>
+          <el-col :xs="24" :sm="12" :md="6">
+            <el-form-item label="时段">
+              <el-radio-group v-model="filters.timeSlot" @change="loadDoctors">
+                <el-radio-button label="AM">上午</el-radio-button>
+                <el-radio-button label="PM">下午</el-radio-button>
+              </el-radio-group>
+            </el-form-item>
+          </el-col>
 
-        <el-form-item label="排序">
-          <el-select v-model="filters.sortBy" @change="loadDoctors">
-            <el-option label="默认排序" value="default" />
-            <el-option label="空闲优先" value="available" />
-            <el-option label="职称优先" value="title" />
-          </el-select>
-        </el-form-item>
+          <el-col :xs="24" :sm="12" :md="6">
+            <el-form-item label="排序">
+              <el-select v-model="filters.sortBy" @change="loadDoctors" style="width: 100%">
+                <el-option label="默认排序" value="default" />
+                <el-option label="空闲优先" value="available" />
+                <el-option label="职称优先" value="title" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
       </el-form>
     </el-card>
 
@@ -111,6 +124,12 @@
           <span>{{ filters.timeSlot === 'AM' ? '上午' : '下午' }}</span>
         </el-form-item>
         <el-divider />
+        <el-form-item label="挂号类型">
+          <el-radio-group v-model="bookForm.registrationType">
+            <el-radio :label="1">普通</el-radio>
+            <el-radio :label="2">急诊</el-radio>
+          </el-radio-group>
+        </el-form-item>
         <el-form-item label="是否复诊">
           <el-radio-group v-model="bookForm.isReturn">
             <el-radio :label="0">初诊</el-radio>
@@ -185,6 +204,7 @@ const filters = reactive({
 
 const bookForm = reactive({
   isReturn: 0,
+  registrationType: 1,
   selectableTypes: []
 })
 
@@ -362,6 +382,7 @@ const confirmBook = async () => {
       doctorId: selectedDoctor.value.id,
       appointmentDate: filters.date,
       timeSlot: filters.timeSlot,
+      registrationType: bookForm.registrationType,
       isReturn: bookForm.isReturn,
       patientTypes: patientTypes
     })

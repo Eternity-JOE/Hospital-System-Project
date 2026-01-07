@@ -7,7 +7,9 @@ import com.example.hospital.mapper.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.text.Collator;
 import java.time.LocalDate;
+import java.util.Locale;
 import java.util.*;
 
 @RestController
@@ -109,6 +111,8 @@ public class PatientRegistrationController {
         }
         
         // 排序
+        Collator collator = Collator.getInstance(Locale.CHINA);
+        
         if ("title".equals(sortBy)) {
             result.sort((a, b) -> {
                 Integer pa = (Integer) a.get("titlePriority");
@@ -122,10 +126,11 @@ public class PatientRegistrationController {
                 return ca.compareTo(cb);
             });
         } else {
+            // 默认排序：按医生姓氏首字母A到Z排序（中文按拼音排序）
             result.sort((a, b) -> {
                 String na = (String) a.get("name");
                 String nb = (String) b.get("name");
-                return na.compareTo(nb);
+                return collator.compare(na, nb);
             });
         }
         
@@ -187,7 +192,9 @@ public class PatientRegistrationController {
         } else if ("available".equals(sortBy)) {
             result.sort((a, b) -> ((Integer) a.get("bookedCount")).compareTo((Integer) b.get("bookedCount")));
         } else {
-            result.sort((a, b) -> ((String) a.get("name")).compareTo((String) b.get("name")));
+            // 默认排序：按医生姓氏首字母A到Z排序（中文按拼音排序）
+            Collator collator = Collator.getInstance(Locale.CHINA);
+            result.sort((a, b) -> collator.compare((String) a.get("name"), (String) b.get("name")));
         }
         
         return Result.success(result);
@@ -201,6 +208,7 @@ public class PatientRegistrationController {
         String appointmentDateStr = (String) data.get("appointmentDate");
         String timeSlot = (String) data.get("timeSlot");
         Integer isReturn = data.get("isReturn") != null ? Integer.valueOf(data.get("isReturn").toString()) : 0;
+        Integer registrationType = data.get("registrationType") != null ? Integer.valueOf(data.get("registrationType").toString()) : 1;
         
         LocalDate appointmentDate = LocalDate.parse(appointmentDateStr);
         
@@ -239,11 +247,11 @@ public class PatientRegistrationController {
         reg.setDepartmentId(doctor.getDepartmentId());
         reg.setAppointmentDate(appointmentDate);
         reg.setTimeSlot(timeSlot);
-        reg.setRegistrationType(1);
+        reg.setRegistrationType(registrationType);
         reg.setIsReturn(isReturn);
         reg.setPatientType(patientType);
         reg.setStatus(1);
-        reg.setPriorityScore(calculatePriority(isReturn, patientType));
+        reg.setPriorityScore(calculatePriority(registrationType, isReturn, patientType));
         
         registrationMapper.insert(reg);
         
@@ -251,8 +259,14 @@ public class PatientRegistrationController {
     }
     
     // 计算优先级分数
-    private int calculatePriority(Integer isReturn, Integer patientType) {
+    // 计算优先级分数
+    private int calculatePriority(Integer registrationType, Integer isReturn, Integer patientType) {
         int score = 100;
+        
+        // 急诊加分
+        if (registrationType != null && registrationType == 2) {
+            score += 1000;
+        }
         
         // 复诊加分
         if (isReturn != null && isReturn == 1) {
@@ -324,7 +338,7 @@ public class PatientRegistrationController {
                .eq("appointment_date", date)
                .eq("time_slot", timeSlot)
                .eq("status", 1)
-               .orderByAsc("priority_score");
+               .orderByDesc("priority_score");
         
         List<Registration> registrations = registrationMapper.selectList(wrapper);
         List<Map<String, Object>> result = new ArrayList<>();

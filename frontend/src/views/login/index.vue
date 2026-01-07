@@ -186,8 +186,8 @@ const handleLogin = async () => {
           
           const redirectMap = {
             admin: '/admin/dashboard',
-            doctor: '/doctor/index',
-            patient: '/patient/index'
+            doctor: '/doctor/schedule',
+            patient: '/patient/registration'
           }
           router.push(redirectMap[res.data.role])
         } else {

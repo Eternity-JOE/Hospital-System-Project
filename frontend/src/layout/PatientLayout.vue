@@ -11,17 +11,14 @@
           router
           style="border-right: none;"
         >
-          <el-menu-item index="/patient/index">
-            <el-icon><House /></el-icon> <span>服务首页</span>
-          </el-menu-item>
-          <el-menu-item index="/patient/profile">
-            <el-icon><User /></el-icon> <span>个人信息</span>
-          </el-menu-item>
           <el-menu-item index="/patient/registration">
             <el-icon><Tickets /></el-icon> <span>挂号大厅</span>
           </el-menu-item>
           <el-menu-item index="/patient/myRegistration">
             <el-icon><List /></el-icon> <span>我的挂号</span>
+          </el-menu-item>
+          <el-menu-item index="/patient/profile">
+            <el-icon><User /></el-icon> <span>个人信息</span>
           </el-menu-item>
         </el-menu>
       </el-aside>

@@ -150,8 +150,13 @@
     <el-dialog v-model="queueDialogVisible" title="实时排队队列" width="700px">
       <el-form :inline="true" style="margin-bottom: 15px;">
         <el-form-item label="科室">
-          <el-select v-model="queueQuery.departmentId" placeholder="选择科室" @change="loadQueue">
+          <el-select v-model="queueQuery.departmentId" placeholder="选择科室" @change="onQueueDepartmentChange">
             <el-option v-for="d in departmentList" :key="d.id" :label="d.name" :value="d.id" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="医生">
+          <el-select v-model="queueQuery.doctorId" placeholder="选择医生" @change="loadQueue" :disabled="!queueQuery.departmentId">
+            <el-option v-for="doc in queueDoctorList" :key="doc.id" :label="doc.name" :value="doc.id" />
           </el-select>
         </el-form-item>
         <el-form-item label="日期">
@@ -216,8 +221,10 @@ const slotsInfo = ref({})
 // 排队相关
 const queueDialogVisible = ref(false)
 const queueList = ref([])
+const queueDoctorList = ref([])
 const queueQuery = reactive({
   departmentId: null,
+  doctorId: null,
   date: new Date().toISOString().split('T')[0],
   timeSlot: 'AM'
 })
@@ -413,18 +420,31 @@ const handleDelete = (row) => {
     })
 }
 
-const showQueueDialog = () => {
+const showQueueDialog = async () => {
   queueDialogVisible.value = true
   if (departmentList.value.length && !queueQuery.departmentId) {
     queueQuery.departmentId = departmentList.value[0].id
+    await onQueueDepartmentChange()
+    if (queueDoctorList.value.length && !queueQuery.doctorId) {
+      queueQuery.doctorId = queueDoctorList.value[0].id
+    }
   }
   loadQueue()
 }
 
 const loadQueue = async () => {
-  if (queueQuery.departmentId && queueQuery.date && queueQuery.timeSlot) {
+  if (queueQuery.departmentId && queueQuery.doctorId && queueQuery.date && queueQuery.timeSlot) {
     const res = await getQueue(queueQuery.departmentId, queueQuery.date, queueQuery.timeSlot)
     queueList.value = res.data || []
+  }
+}
+
+const onQueueDepartmentChange = async () => {
+  queueQuery.doctorId = null
+  queueDoctorList.value = []
+  if (queueQuery.departmentId) {
+    const res = await getDoctorsByDepartment(queueQuery.departmentId)
+    queueDoctorList.value = res.data || []
   }
 }
 

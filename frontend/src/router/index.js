@@ -81,14 +81,8 @@ const router = createRouter({
     {
       path: '/doctor',
       component: DoctorLayout,
-      redirect: '/doctor/index',
+      redirect: '/doctor/schedule',
       children: [
-        {
-          path: 'index',
-          name: 'DoctorHome',
-          component: () => import('../views/doctor/home.vue'),
-          meta: { title: '工作台首页', role: 'doctor' }
-        },
         {
           path: 'profile',
           name: 'DoctorProfile',
@@ -113,14 +107,8 @@ const router = createRouter({
     {
       path: '/patient',
       component: PatientLayout,
-      redirect: '/patient/index',
+      redirect: '/patient/registration',
       children: [
-        {
-          path: 'index',
-          name: 'PatientHome',
-          component: () => import('../views/patient/home.vue'),
-          meta: { title: '服务首页', role: 'patient' }
-        },
         {
           path: 'profile',
           name: 'PatientProfile',
@@ -165,8 +153,8 @@ router.beforeEach((to, from, next) => {
     // 角色不匹配，跳转到对应角色的首页
     const redirectMap = {
       admin: '/admin/dashboard',
-      doctor: '/doctor/index',
-      patient: '/patient/index'
+      doctor: '/doctor/schedule',
+      patient: '/patient/registration'
     }
     next(redirectMap[userRole])
     return

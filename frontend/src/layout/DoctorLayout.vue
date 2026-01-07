@@ -11,14 +11,11 @@
           router
           style="border-right: none;"
         >
-          <el-menu-item index="/doctor/index">
-            <el-icon><House /></el-icon> <span>工作台首页</span>
+          <el-menu-item index="/doctor/schedule">
+            <el-icon><Calendar /></el-icon> <span>日程安排</span>
           </el-menu-item>
           <el-menu-item index="/doctor/profile">
             <el-icon><User /></el-icon> <span>个人信息</span>
-          </el-menu-item>
-          <el-menu-item index="/doctor/schedule">
-            <el-icon><Calendar /></el-icon> <span>日程安排</span>
           </el-menu-item>
           <el-menu-item index="/doctor/leave">
             <el-icon><Document /></el-icon> <span>请假申请</span>
