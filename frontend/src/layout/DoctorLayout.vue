@@ -17,6 +17,9 @@
           <el-menu-item index="/doctor/profile">
             <el-icon><User /></el-icon> <span>个人信息</span>
           </el-menu-item>
+          <el-menu-item index="/doctor/settlement">
+               <el-icon><Calendar /></el-icon> <span>处理服务</span>
+          </el-menu-item>
           <el-menu-item index="/doctor/leave">
             <el-icon><Document /></el-icon> <span>请假申请</span>
           </el-menu-item>
