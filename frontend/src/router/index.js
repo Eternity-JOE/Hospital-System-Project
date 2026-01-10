@@ -96,6 +96,12 @@ const router = createRouter({
           meta: { title: '日程安排', role: 'doctor' }
         },
         {
+           path: 'settlement',
+           name: 'DoctorSettlement',
+           component: () => import('../views/doctor/settlement.vue'),
+           meta: { title: '处理服务', role: 'doctor' }
+        },
+        {
           path: 'leave',
           name: 'DoctorLeave',
           component: () => import('../views/doctor/leave.vue'),
@@ -120,6 +126,12 @@ const router = createRouter({
           name: 'PatientRegistration',
           component: () => import('../views/patient/registration.vue'),
           meta: { title: '挂号大厅', role: 'patient' }
+        },
+        {
+          path: 'bill',
+          name: 'PatientBill',
+          component: () => import('../views/patient/bill.vue'),
+          meta: { title: '缴费大厅', role: 'patient' }
         },
         {
           path: 'myRegistration',
