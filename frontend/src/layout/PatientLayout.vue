@@ -17,6 +17,9 @@
           <el-menu-item index="/patient/myRegistration">
             <el-icon><List /></el-icon> <span>我的挂号</span>
           </el-menu-item>
+          <el-menu-item index="/patient/bill">
+             <el-icon><List /></el-icon> <span>缴费大厅</span>
+           </el-menu-item>
           <el-menu-item index="/patient/profile">
             <el-icon><User /></el-icon> <span>个人信息</span>
           </el-menu-item>
