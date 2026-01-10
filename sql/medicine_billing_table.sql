@@ -27,7 +27,8 @@ CREATE TABLE `bill` (
   `status` tinyint DEFAULT '0',
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP,
   `pay_time` datetime DEFAULT NULL,
+  `doctor_id`int NOT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-INSERT INTO `bill` (`patient_id`, `total_amount`, `status`) VALUES (1, 50.00, 0);
+INSERT INTO `bill` ('doctor_id',`patient_id`, `total_amount`, `status`) VALUES (1,1, 50.00, 0);
