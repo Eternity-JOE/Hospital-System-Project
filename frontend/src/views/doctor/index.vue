@@ -61,11 +61,17 @@
             <span v-if="!scope.row.diseaseIds || scope.row.diseaseIds.length === 0">-</span>
           </template>
         </el-table-column>
-        <el-table-column prop="status" label="状态" align="center" width="100">
+        <el-table-column label="每周休息" align="center" width="120">
           <template #default="scope">
-            <el-tag :type="scope.row.status === 1 ? 'success' : 'danger'">
-              {{ scope.row.status === 1 ? '在职' : '离职' }}
-            </el-tag>
+            <span v-if="scope.row.schedule">{{ getRestDays(scope.row.schedule) }}</span>
+            <span v-else style="color: #909399;">未设置</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="status" label="今日状态" align="center" width="100">
+          <template #default="scope">
+            <el-tag v-if="scope.row.status !== 1" type="danger">离职</el-tag>
+            <el-tag v-else-if="isTodayWorking(scope.row)" type="success">出诊中</el-tag>
+            <el-tag v-else type="info">休息</el-tag>
           </template>
         </el-table-column>
 
@@ -330,6 +336,61 @@ const getDiseaseName = (diseaseId) => {
   return disease ? disease.name : '-'
 }
 
+// 6. 判断医生今日是否出诊
+const isTodayWorking = (doctor) => {
+  if (!doctor.schedule) return true // 没有排班设置默认出诊
+  
+  const today = new Date()
+  const dayOfWeek = today.getDay() || 7 // 0是周日，转为7
+  
+  // 王医生特殊处理（DYNAMIC）- 休息日是今天往后第4天和第6天
+  if (doctor.schedule === 'DYNAMIC') {
+    const restDays = getDynamicRestDays()
+    return !restDays.includes(dayOfWeek)
+  }
+  
+  // 普通医生：检查schedule字段
+  // schedule格式: "1,3,4,6,7" 表示周一、周三、周四、周六、周日上班
+  const workDays = doctor.schedule.split(',').map(d => parseInt(d.trim()))
+  return workDays.includes(dayOfWeek)
+}
+
+// 获取动态排班的休息日（今天往后第4天和第6天）
+const getDynamicRestDays = () => {
+  const today = new Date()
+  const todayDow = today.getDay() || 7 // 1-7
+  
+  // 第4天和第6天的星期几
+  const rest1 = ((todayDow - 1 + 4) % 7) + 1 // 往后第4天
+  const rest2 = ((todayDow - 1 + 6) % 7) + 1 // 往后第6天
+  
+  return [rest1, rest2]
+}
+
+// 7. 获取医生休息日（显示用）
+const getRestDays = (schedule) => {
+  if (!schedule) return ''
+  
+  const dayNames = ['', '周一', '周二', '周三', '周四', '周五', '周六', '周日']
+  
+  // 动态排班：显示今天往后第4天和第6天
+  if (schedule === 'DYNAMIC') {
+    const restDays = getDynamicRestDays()
+    return restDays.map(d => dayNames[d]).join('、')
+  }
+  
+  const workDays = schedule.split(',').map(d => parseInt(d.trim()))
+  const restDays = []
+  
+  for (let i = 1; i <= 7; i++) {
+    if (!workDays.includes(i)) {
+      restDays.push(dayNames[i])
+    }
+  }
+  
+  return restDays.join('、')
+}
+
 // 6. 处理病种选择变化（限制1-3个）
 const handleDiseaseChange = (value) => {
   if (value && value.length > 3) {
@@ -341,6 +402,27 @@ const handleDiseaseChange = (value) => {
 }
 
 // 7. 处理前端搜索和分页
+// 职称匹配：搜"主任"不匹配"副主任"，搜"副主任"不匹配"主任医师"
+const matchTitle = (title, keyword) => {
+  if (!title) return false
+  const t = title.toLowerCase()
+  const k = keyword.toLowerCase()
+  
+  // 特殊处理职称搜索
+  if (k === '主任' || k === '主任医师') {
+    return t === '主任医师'
+  }
+  if (k === '副主任' || k === '副主任医师') {
+    return t === '副主任医师'
+  }
+  if (k === '主治' || k === '主治医师') {
+    return t === '主治医师'
+  }
+  
+  // 其他情况用模糊匹配
+  return t.includes(k)
+}
+
 const handlePageChange = () => {
   // 第一步：搜索过滤
   let temp = allTableData.value
@@ -349,7 +431,7 @@ const handlePageChange = () => {
     temp = temp.filter(item =>
         (item.name && item.name.toLowerCase().includes(keyword)) ||
         (item.phone && item.phone.includes(keyword)) ||
-        (item.title && item.title.toLowerCase().includes(keyword))
+        matchTitle(item.title, keyword)
     )
   }
   total.value = temp.length

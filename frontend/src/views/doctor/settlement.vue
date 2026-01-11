@@ -1,433 +1,423 @@
 <template>
-   <div class="app-container" style="padding: 20px;">
-     <el-card shadow="never" class="mb-20">
-       <div style="display: flex; justify-content: space-between; align-items: center;">
-         <div style="font-weight: bold; font-size: 16px; margin-bottom: 10px;">收费结算账单管理</div>
-         <el-button type="primary" size="small" @click="openAddDialog">新增收费账单</el-button>
-       </div>
-     </el-card>
+  <div class="app-container" style="padding: 20px;">
+    <!-- Tab切换 -->
+    <el-tabs v-model="activeTab" type="card" @tab-change="onTabChange">
+      <el-tab-pane label="今日问诊" name="today">
+        <el-card shadow="never" class="mb-20">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="font-weight: bold; font-size: 16px;">今日问诊列表 - {{ today }}</div>
+            <el-radio-group v-model="timeSlot" @change="loadTodayRegistrations">
+              <el-radio-button label="AM">上午</el-radio-button>
+              <el-radio-button label="PM">下午</el-radio-button>
+            </el-radio-group>
+          </div>
+        </el-card>
 
-     <el-card shadow="never" style="margin-top: 20px;">
-       <el-table :data="pageData" border stripe style="width: 100%" v-loading="loading">
-         <el-table-column prop="id" label="账单流水号" width="120" align="center" />
-         <el-table-column prop="doctorId" label="开单医生ID" width="100" align="center" />
-         <el-table-column prop="patientId" label="就诊病人ID" width="100" align="center" />
-         <el-table-column prop="totalAmount" label="应收金额" align="center" width="150">
-           <template #default="scope">
-             <span style="color: #f56c6c; font-weight: bold;">￥{{ scope.row.totalAmount }}</span>
-           </template>
-         </el-table-column>
-         <el-table-column prop="createTime" label="生成时间" align="center" width="180" />
-         <el-table-column prop="status" label="支付状态" align="center" width="120">
-           <template #default="scope">
-             <el-tag :type="scope.row.status === 1 ? 'success' : 'danger'">
-               {{ scope.row.status === 1 ? '已缴费' : '待缴费' }}
-             </el-tag>
-           </template>
-         </el-table-column>
+        <el-card shadow="never" style="margin-top: 20px;">
+          <el-table :data="registrationList" border stripe style="width: 100%" v-loading="loading" empty-text="今日暂无挂号">
+            <el-table-column type="index" label="序号" width="60" align="center" />
+            <el-table-column prop="patientName" label="患者姓名" width="100" align="center" />
+            <el-table-column prop="priorityScore" label="优先级" width="80" align="center">
+              <template #default="scope">
+                <el-tag :type="scope.row.priorityScore >= 1000 ? 'danger' : (scope.row.priorityScore >= 150 ? 'warning' : '')">
+                  {{ scope.row.priorityScore }}
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column prop="registrationType" label="类型" width="80" align="center">
+              <template #default="scope">
+                <el-tag :type="scope.row.registrationType === 2 ? 'danger' : ''">
+                  {{ scope.row.registrationType === 2 ? '急诊' : '普通' }}
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column prop="status" label="状态" width="100" align="center">
+              <template #default="scope">
+                <el-tag :type="getStatusType(scope.row.status)">{{ getStatusText(scope.row.status) }}</el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column label="操作" width="200" align="center">
+              <template #default="scope">
+                <el-button type="primary" size="small" @click="openDiagnoseDialog(scope.row)" :disabled="scope.row.status !== 1">
+                  问诊
+                </el-button>
+                <el-button type="info" size="small" @click="viewPatientInfo(scope.row)">
+                  查看信息
+                </el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+        </el-card>
+      </el-tab-pane>
 
-         <el-table-column label="操作" width="150" align="center" fixed="right">
-           <template #default="scope">
-             <el-button
-               v-if="scope.row.status === 0"
-               type="primary"
-               size="small"
-               @click="handlePay(scope.row)"
-             >
-               确认缴费
-             </el-button>
-             <span v-else style="color: #909399; font-size: 12px;">已结算完成</span>
-           </template>
-         </el-table-column>
-       </el-table>
+      <el-tab-pane label="账单历史" name="history">
+        <el-card shadow="never">
+          <el-table :data="billList" border stripe style="width: 100%" v-loading="billLoading" empty-text="暂无账单记录">
+            <el-table-column prop="id" label="账单号" width="80" align="center" />
+            <el-table-column prop="patientName" label="患者姓名" width="100" align="center" />
+            <el-table-column prop="diagnosis" label="诊断信息" align="center" show-overflow-tooltip>
+              <template #default="scope">
+                {{ scope.row.diagnosis || '无' }}
+              </template>
+            </el-table-column>
+            <el-table-column prop="totalAmount" label="金额" width="100" align="center">
+              <template #default="scope">
+                <span style="color: #f56c6c; font-weight: bold;">￥{{ scope.row.totalAmount }}</span>
+              </template>
+            </el-table-column>
+            <el-table-column prop="createTime" label="开单时间" width="160" align="center" />
+            <el-table-column prop="status" label="支付状态" width="100" align="center">
+              <template #default="scope">
+                <el-tag :type="scope.row.status === 1 ? 'success' : 'danger'">
+                  {{ scope.row.status === 1 ? '已缴费' : '待缴费' }}
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column prop="payTime" label="缴费时间" width="160" align="center">
+              <template #default="scope">
+                {{ scope.row.payTime || '-' }}
+              </template>
+            </el-table-column>
+          </el-table>
+        </el-card>
+      </el-tab-pane>
+    </el-tabs>
 
-       <div style="margin-top: 20px; display: flex; justify-content: flex-end;">
-         <el-pagination
-             v-model:current-page="pageNum"
-             :page-size="10"
-             :total="total"
-             layout="total, prev, pager, next"
-             @current-change="handlePageChange"
-         />
-       </div>
-     </el-card>
+    <!-- 问诊对话框 -->
+    <el-dialog v-model="diagnoseDialogVisible" title="问诊诊断" width="650px" :close-on-click-modal="false">
+      <el-form :model="diagnoseForm" label-width="100px">
+        <el-form-item label="患者姓名">
+          <span style="font-weight: bold;">{{ currentPatient?.patientName }}</span>
+        </el-form-item>
+        <el-form-item label="诊断简评">
+          <el-input v-model="diagnoseForm.diagnosis" type="textarea" :rows="3" placeholder="请输入诊断信息（非必填）" />
+        </el-form-item>
+        <el-divider content-position="left">开药处方</el-divider>
+        <div v-for="(med, index) in diagnoseForm.medicines" :key="index" class="medicine-row">
+          <el-row :gutter="10" align="middle">
+            <el-col :span="10">
+              <el-form-item :label="'药品' + (index + 1)" label-width="70px">
+                <el-select v-model="med.medicineId" filterable placeholder="搜索或选择药品" style="width: 100%" @change="onMedicineChange(index)">
+                  <el-option v-for="m in medicineList" :key="m.id" :label="`${m.name} (￥${m.price}/${m.unit} 库存:${m.stock})`" :value="m.id" />
+                </el-select>
+              </el-form-item>
+            </el-col>
+            <el-col :span="6">
+              <el-form-item label="数量" label-width="50px">
+                <el-input-number v-model="med.quantity" :min="1" :max="getMaxStock(med.medicineId)" size="small" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="4">
+              <span v-if="med.medicineId" style="color: #f56c6c;">￥{{ getMedicineSubtotal(med) }}</span>
+            </el-col>
+            <el-col :span="4">
+              <el-button v-if="index > 0" type="danger" size="small" @click="removeMedicine(index)">删除</el-button>
+            </el-col>
+          </el-row>
+        </div>
+        <el-button type="default" size="small" @click="addMedicine" :disabled="diagnoseForm.medicines.length >= 5">
+          + 增加药品
+        </el-button>
+        <el-form-item label="挂号费" style="margin-top: 15px;">
+          <span style="color: #909399;">￥{{ registrationFee.toFixed(2) }}（固定）</span>
+        </el-form-item>
+        <el-divider />
+        <el-form-item label="费用合计">
+          <span style="font-size: 18px; font-weight: bold; color: #f56c6c;">￥{{ totalAmount.toFixed(2) }}</span>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="diagnoseDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="submitDiagnose" :loading="submitting">确认诊断并生成账单</el-button>
+      </template>
+    </el-dialog>
 
-     <el-dialog
-       v-model="dialogVisible"
-       title="新增收费账单"
-       width="500px"
-       modal
-       :close-on-click-modal="false"
-       destroy-on-close
-     >
-       <div class="dialog-content">
-         <div class="input-item">
-           <label class="input-label">病人姓名</label>
-           <el-input
-             v-model="form.patientName"
-             placeholder="请输入病人姓名"
-             class="input-box"
-             @blur="checkPatientName"
-           />
-           <div class="error-text" v-if="errMsg.patientName">{{errMsg.patientName}}</div>
-         </div>
-         <div class="input-item">
-           <label class="input-label">药品</label>
-           <el-input
-             v-model="form.medicine1"
-             placeholder="请输入药品名称"
-             class="input-box"
-             @blur="checkMedicine(1)"
-           />
-           <div class="error-text" v-if="errMsg.medicine1">{{errMsg.medicine1}}</div>
-         </div>
-         <div class="input-item">
-           <label class="input-label">数量</label>
-           <el-input
-             v-model="form.num1"
-             placeholder="请输入0-100的整数"
-             class="input-box"
-             type="number"
-             @blur="checkNum(1)"
-           />
-           <div class="error-text" v-if="errMsg.num1">{{errMsg.num1}}</div>
-         </div>
-         <div class="input-item" v-if="medicineNum >= 2">
-           <label class="input-label">药品2</label>
-           <el-input
-             v-model="form.medicine2"
-             placeholder="请输入药品名称"
-             class="input-box"
-             @blur="checkMedicine(2)"
-           />
-           <div class="error-text" v-if="errMsg.medicine2">{{errMsg.medicine2}}</div>
-         </div>
-         <div class="input-item" v-if="medicineNum >= 2">
-           <label class="input-label">数量</label>
-           <el-input
-             v-model="form.num2"
-             placeholder="请输入0-100的整数"
-             class="input-box"
-             type="number"
-             @blur="checkNum(2)"
-           />
-           <div class="error-text" v-if="errMsg.num2">{{errMsg.num2}}</div>
-         </div>
-         <div class="input-item" v-if="medicineNum >= 3">
-           <label class="input-label">药品3</label>
-           <el-input
-             v-model="form.medicine3"
-             placeholder="请输入药品名称"
-             class="input-box"
-             @blur="checkMedicine(3)"
-           />
-           <div class="error-text" v-if="errMsg.medicine3">{{errMsg.medicine3}}</div>
-         </div>
-         <div class="input-item" v-if="medicineNum >= 3">
-           <label class="input-label">数量</label>
-           <el-input
-             v-model="form.num3"
-             placeholder="请输入0-100的整数"
-             class="input-box"
-             type="number"
-             @blur="checkNum(3)"
-           />
-           <div class="error-text" v-if="errMsg.num3">{{errMsg.num3}}</div>
-         </div>
-         <div class="input-item">
-           <label class="input-label">其他费用</label>
-           <el-input
-             v-model="form.otherCost"
-             placeholder="请输入其他费用"
-             class="input-box"
-             type="number"
-             step="0.01"
-             @blur="checkOtherCost"
-           />
-           <div class="error-text" v-if="errMsg.otherCost">{{errMsg.otherCost}}</div>
-         </div>
-         <div v-if="showWarnText" class="warn-text">温馨提示：最多只能添加3种药品</div>
-       </div>
-       <template #footer>
-         <el-button @click="dialogVisible = false">取消</el-button>
-         <el-button type="default" @click="addMedicine">增加药品</el-button>
-         <el-button type="primary" @click="submitForm">确认生成账单</el-button>
-       </template>
-     </el-dialog>
-   </div>
- </template>
+    <!-- 患者信息对话框 -->
+    <el-dialog v-model="patientInfoDialogVisible" title="患者详细信息" width="450px">
+      <el-descriptions :column="1" border>
+        <el-descriptions-item label="姓名">{{ patientInfo.name }}</el-descriptions-item>
+        <el-descriptions-item label="性别">{{ patientInfo.gender }}</el-descriptions-item>
+        <el-descriptions-item label="年龄">{{ patientInfo.age }} 岁</el-descriptions-item>
+        <el-descriptions-item label="手机号">{{ patientInfo.phone }}</el-descriptions-item>
+        <el-descriptions-item label="住址">{{ patientInfo.address || '未填写' }}</el-descriptions-item>
+      </el-descriptions>
+    </el-dialog>
+  </div>
+</template>
 
- <script setup>
- import { ref, reactive, onMounted } from 'vue'
- import { ElMessage, ElMessageBox } from 'element-plus'
- import { getDoctorBillList, createDoctorBill, payDoctorBill } from '@/api/bill'
- import { getPatientList } from '@/api/patient'
- import { getMedicineList } from '@/api/medicine'
+<script setup>
+import { ref, reactive, computed, onMounted } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import request from '@/utils/request'
+import { getMedicineList } from '@/api/medicine'
+import { getPatientList } from '@/api/patient'
 
- const doctorId = ref(localStorage.getItem('refId') || '')
- const NPid = ref('')
- const NDid = ref('')
- const Namount = ref(0.00)
+const doctorId = ref(localStorage.getItem('refId') || '')
+const today = new Date().toISOString().split('T')[0]
+const timeSlot = ref(new Date().getHours() < 12 ? 'AM' : 'PM')
 
- const loading = ref(false)
- const allTableData = ref([])
- const pageData = ref([])
- const total = ref(0)
- const pageNum = ref(1)
+const activeTab = ref('today')
+const loading = ref(false)
+const billLoading = ref(false)
+const submitting = ref(false)
+const registrationList = ref([])
+const medicineList = ref([])
+const billList = ref([])
+const patientList = ref([])
 
- const dialogVisible = ref(false)
- const medicineNum = ref(1)
- const showWarnText = ref(false)
- const form = reactive({
-   patientName: '',
-   medicine1: '',
-   num1: '',
-   medicine2: '',
-   num2: '',
-   medicine3: '',
-   num3: '',
-   otherCost: ''
- })
- const errMsg = reactive({
-   patientName: '',
-   medicine1: '',
-   num1: '',
-   medicine2: '',
-   num2: '',
-   medicine3: '',
-   num3: '',
-   otherCost: ''
- })
+const diagnoseDialogVisible = ref(false)
+const patientInfoDialogVisible = ref(false)
+const currentPatient = ref(null)
+const patientInfo = ref({})
 
- const openAddDialog = () => {
-   dialogVisible.value = true
-   medicineNum.value = 1
-   showWarnText.value = false
-   Object.keys(form).forEach(key => form[key] = '')
-   Object.keys(errMsg).forEach(key => errMsg[key] = '')
-   NPid.value = ''
-   NDid.value = doctorId.value
-   Namount.value = 0.00
- }
+const diagnoseForm = reactive({
+  diagnosis: '',
+  medicines: [{ medicineId: null, quantity: 1 }]
+})
 
- const addMedicine = () => {
-   if (medicineNum.value < 3) {
-     medicineNum.value += 1
-     showWarnText.value = false
-   } else {
-     showWarnText.value = true
-     ElMessage.warning('最多只能添加3种药品')
-   }
- }
+// 固定挂号费15元
+const registrationFee = 15
 
- const checkPatientName = () => {
-   if (!form.patientName.trim()) {
-     errMsg.patientName = '病人姓名不能为空'
-   } else {
-     errMsg.patientName = ''
-   }
- }
- const checkMedicine = (num) => {
-   const key = `medicine${num}`
-   if (medicineNum.value >= num && !form[key].trim()) {
-     errMsg[key] = `药品${num}名称不能为空`
-   } else {
-     errMsg[key] = ''
-   }
- }
- const checkNum = (num) => {
-   const key = `num${num}`
-   const val = Number(form[key])
-   if (medicineNum.value >= num) {
-     if (isNaN(val)) {
-       errMsg[key] = '只能输入有效的数字'
-     } else if (!Number.isInteger(val)) {
-       errMsg[key] = '只能输入整数'
-     } else if (val < 0 || val > 100) {
-       errMsg[key] = '只能输入0-100的整数'
-     } else {
-       errMsg[key] = ''
-     }
-   } else {
-     errMsg[key] = ''
-   }
- }
- const checkOtherCost = () => {
-   const val = Number(form.otherCost)
-   if (form.otherCost === '') {
-     errMsg.otherCost = '其他费用不能为空'
-   } else if (isNaN(val)) {
-     errMsg.otherCost = '请输入有效的金额'
-   } else if (val < 0) {
-     errMsg.otherCost = '不能输入负数金额'
-   } else if (val > 10000) {
-     errMsg.otherCost = '金额不能超过10000'
-   } else {
-     errMsg.otherCost = ''
-   }
- }
- const checkAllForm = () => {
-   checkPatientName()
-   checkMedicine(1)
-   checkNum(1)
-   if (medicineNum.value >= 2) {
-     checkMedicine(2)
-     checkNum(2)
-   }
-   if (medicineNum.value >= 3) {
-     checkMedicine(3)
-     checkNum(3)
-   }
-   checkOtherCost()
-   return Object.values(errMsg).every(item => item === '')
- }
+const getStatusType = (status) => {
+  const map = { 0: 'info', 1: 'primary', 2: 'success', 3: 'danger' }
+  return map[status] || ''
+}
 
- const submitForm = async () => {
-   const isPass = checkAllForm()
-   if (!isPass) {
-     ElMessage.warning('请完善并修正表单内容后提交')
-     return
-   }
+const getStatusText = (status) => {
+  const map = { 0: '已取消', 1: '待就诊', 2: '已完成', 3: '爽约' }
+  return map[status] || '未知'
+}
 
-   try {
-     const patientRes = await getPatientList()
-     if (patientRes.code !== '200' || !patientRes.data || patientRes.data.length === 0) {
-       ElMessage.error('病人列表查询失败，暂无病人数据')
-       return
-     }
-     const patient = patientRes.data.find(item => item.name.trim() === form.patientName.trim())
-     if (!patient) {
-       ElMessage.error('该病人不存在，请核对姓名')
-       return
-     }
-     NPid.value = patient.id
+const getMaxStock = (medicineId) => {
+  if (!medicineId) return 100
+  const med = medicineList.value.find(m => m.id === medicineId)
+  return med ? med.stock : 100
+}
 
-     const medicineRes = await getMedicineList()
-     if (medicineRes.code !== '200' || !medicineRes.data || medicineRes.data.length === 0) {
-       ElMessage.error('药品列表查询失败，暂无药品数据')
-       return
-     }
-     const medicineList = medicineRes.data
-     let totalMoney = 0.00
+const getMedicineSubtotal = (med) => {
+  if (!med.medicineId) return '0.00'
+  const medicine = medicineList.value.find(m => m.id === med.medicineId)
+  if (!medicine) return '0.00'
+  return (medicine.price * med.quantity).toFixed(2)
+}
 
-     if (form.medicine1.trim()) {
-       const med1 = medicineList.find(item => item.name.trim() === form.medicine1.trim())
-       if (!med1) { ElMessage.error('药品1不存在'); return }
-       totalMoney += Number(med1.price) * Number(form.num1)
-     }
-     if (medicineNum.value >= 2 && form.medicine2.trim()) {
-       const med2 = medicineList.find(item => item.name.trim() === form.medicine2.trim())
-       if (!med2) { ElMessage.error('药品2不存在'); return }
-       totalMoney += Number(med2.price) * Number(form.num2)
-     }
-     if (medicineNum.value >= 3 && form.medicine3.trim()) {
-       const med3 = medicineList.find(item => item.name.trim() === form.medicine3.trim())
-       if (!med3) { ElMessage.error('药品3不存在'); return }
-       totalMoney += Number(med3.price) * Number(form.num3)
-     }
-     totalMoney += Number(form.otherCost) || 0
-     Namount.value = totalMoney
+const totalAmount = computed(() => {
+  let total = registrationFee // 固定挂号费
+  diagnoseForm.medicines.forEach(med => {
+    if (med.medicineId) {
+      const medicine = medicineList.value.find(m => m.id === med.medicineId)
+      if (medicine) {
+        total += medicine.price * med.quantity
+      }
+    }
+  })
+  return total
+})
 
+const onMedicineChange = (index) => {
+  const med = diagnoseForm.medicines[index]
+  const maxStock = getMaxStock(med.medicineId)
+  if (med.quantity > maxStock) {
+    med.quantity = maxStock
+  }
+}
+
+const addMedicine = () => {
+  if (diagnoseForm.medicines.length < 5) {
+    diagnoseForm.medicines.push({ medicineId: null, quantity: 1 })
+  } else {
+    ElMessage.warning('最多只能开5种药品')
+  }
+}
+
+const removeMedicine = (index) => {
+  diagnoseForm.medicines.splice(index, 1)
+}
+
+const loadTodayRegistrations = async () => {
+  if (!doctorId.value) {
+    ElMessage.warning('未获取到医生ID，请重新登录')
+    return
+  }
+  loading.value = true
+  try {
+    const res = await request({
+      url: '/api/doctor/schedule/today',
+      method: 'get',
+      params: { doctorId: doctorId.value, date: today, timeSlot: timeSlot.value }
+    })
+    if (res.code === '200') {
+      registrationList.value = res.data || []
+    }
+  } catch (error) {
+    console.error('获取今日挂号失败:', error)
+  } finally {
+    loading.value = false
+  }
+}
+
+const loadMedicineList = async () => {
+  try {
+    const res = await getMedicineList()
+    if (res.code === '200') {
+      medicineList.value = res.data.filter(m => m.status === 1 && m.stock > 0) || []
+    }
+  } catch (error) {
+    console.error('获取药品列表失败:', error)
+  }
+}
+
+const loadPatientList = async () => {
+  try {
+    const res = await getPatientList()
+    if (res.code === '200') {
+      patientList.value = res.data || []
+    }
+  } catch (error) {
+    console.error('获取患者列表失败:', error)
+  }
+}
+
+const getPatientName = (patientId) => {
+  if (!patientId) return '-'
+  const patient = patientList.value.find(p => p.id === patientId)
+  return patient ? patient.name : `患者${patientId}`
+}
+
+const formatTime = (timeStr) => {
+  if (!timeStr) return ''
+  try {
+    const date = new Date(timeStr)
+    const year = date.getFullYear()
+    const month = (date.getMonth() + 1).toString().padStart(2, '0')
+    const day = date.getDate().toString().padStart(2, '0')
+    const hours = date.getHours().toString().padStart(2, '0')
+    const minutes = date.getMinutes().toString().padStart(2, '0')
+    return `${year}-${month}-${day} ${hours}:${minutes}`
+  } catch (err) {
+    return timeStr
+  }
+}
+
+const loadBillHistory = async () => {
+  if (!doctorId.value) return
+  billLoading.value = true
+  try {
+    const res = await request({
+      url: '/bill/doctor/list',
+      method: 'get',
+      params: { doctorId: doctorId.value }
+    })
+    if (res.code === '200') {
+      billList.value = (res.data || []).map(item => ({
+        ...item,
+        patientName: getPatientName(item.patientId),
+        createTime: formatTime(item.createTime),
+        payTime: formatTime(item.payTime)
+      }))
+    }
+  } catch (error) {
+    console.error('获取账单历史失败:', error)
+  } finally {
+    billLoading.value = false
+  }
+}
+
+const onTabChange = (tab) => {
+  if (tab === 'history') {
+    loadBillHistory()
+  }
+}
+
+const openDiagnoseDialog = (row) => {
+  currentPatient.value = row
+  diagnoseForm.diagnosis = ''
+  diagnoseForm.medicines = [{ medicineId: null, quantity: 1 }]
+  diagnoseDialogVisible.value = true
+}
+
+const viewPatientInfo = async (row) => {
+  try {
+    const res = await request({
+      url: '/patient/' + row.patientId,
+      method: 'get'
+    })
+    if (res.code === '200' && res.data) {
+      patientInfo.value = res.data
+      patientInfoDialogVisible.value = true
+    } else {
+      ElMessage.error('获取患者信息失败')
+    }
+  } catch (error) {
+    ElMessage.error('获取患者信息失败')
+  }
+}
+
+const submitDiagnose = async () => {
+  // 验证至少开了一种药（挂号费固定存在，所以可以不开药）
+  // 移除强制开药验证，因为有固定挂号费
+
+  // 验证库存
+  for (const med of diagnoseForm.medicines) {
+    if (med.medicineId) {
+      const medicine = medicineList.value.find(m => m.id === med.medicineId)
+      if (medicine && med.quantity > medicine.stock) {
+        ElMessage.error(`药品"${medicine.name}"库存不足，当前库存：${medicine.stock}`)
+        return
+      }
+    }
+  }
+
+  submitting.value = true
+  try {
     const billData = {
-      doctorId: Number(NDid.value) || 1,
-      patientId: Number(NPid.value) || 1,
-      totalAmount: Namount.value || 0.00
+      doctorId: Number(doctorId.value),
+      patientId: currentPatient.value.patientId,
+      registrationId: currentPatient.value.id,
+      diagnosis: diagnoseForm.diagnosis,
+      medicines: diagnoseForm.medicines.filter(m => m.medicineId).map(m => ({
+        medicineId: m.medicineId,
+        quantity: m.quantity
+      })),
+      registrationFee: registrationFee,
+      totalAmount: totalAmount.value
     }
 
-     createDoctorBill(billData).then(res => {
-       console.log('后端返回数据：', res)
-       if(res.code === '200' || res.code === '500'){
-         ElMessage.success('提交成功，账单已创建！')
-         dialogVisible.value = false
-         getList()
-       } else {
-         ElMessage.error(res?.msg || '账单创建失败，请重试')
-       }
-     }).catch(error => {
-       console.error('创建账单异常:', error)
-       ElMessage.error('系统异常，请稍后重试')
-     })
+    const res = await request({
+      url: '/bill/diagnose',
+      method: 'post',
+      data: billData
+    })
 
-   } catch (error) {
-     console.error('账单提交失败：', error)
-     ElMessage.error('系统异常，请稍后重试')
-   }
- }
+    if (res.code === '200') {
+      ElMessage.success('诊断完成，账单已生成！')
+      diagnoseDialogVisible.value = false
+      loadTodayRegistrations()
+      loadMedicineList() // 刷新药品库存
+    } else {
+      ElMessage.error(res.msg || '操作失败')
+    }
+  } catch (error) {
+    console.error('提交诊断失败:', error)
+    ElMessage.error('系统异常，请稍后重试')
+  } finally {
+    submitting.value = false
+  }
+}
 
- const getList = async () => {
-   loading.value = true
-   try {
-     if (!doctorId.value) {
-       ElMessage.warning('未获取到医生ID，请重新登录')
-       loading.value = false
-       return
-     }
-     const res = await getDoctorBillList(doctorId.value)
-     allTableData.value = res.data || []
-     handlePageChange()
-   } catch (error) {
-     console.error('获取账单失败：', error)
-     ElMessage.error('获取账单列表失败，请刷新重试')
-   } finally {
-     loading.value = false
-   }
- }
+onMounted(() => {
+  loadPatientList().then(() => {
+    loadTodayRegistrations()
+  })
+  loadMedicineList()
+})
+</script>
 
- const handlePageChange = () => {
-   total.value = allTableData.value.length
-   const start = (pageNum.value - 1) * 10
-   pageData.value = allTableData.value.slice(start, start + 10)
- }
-
- const handlePay = async (row) => {
-   ElMessageBox.confirm(
-     `确认病人(ID:${row.patientId}) 已线下支付 ￥${row.totalAmount} 吗？`,
-     '缴费确认',
-     { confirmButtonText: '已收款', cancelButtonText: '取消', type: 'success' }
-   ).then(async () => {
-     try {
-       await payDoctorBill(row.id)
-       ElMessage.success('账单缴费成功！')
-       getList()
-     } catch (error) {
-       console.error('缴费失败：', error)
-       ElMessage.error('缴费失败，请重试')
-     }
-   })
- }
-
- onMounted(() => {
-   getList()
- })
- </script>
-
- <style scoped>
- .dialog-content {
-   padding: 10px 0;
- }
- .input-item {
-   display: flex;
-   flex-direction: column;
-   margin-bottom: 15px;
- }
- .input-label {
-   width: 80px;
-   font-size: 14px;
-   padding-bottom: 5px;
-   font-weight: 500;
- }
- .input-box {
-   width: 380px;
- }
- .warn-text {
-   color: #ff4d4f;
-   font-size: 12px;
-   margin-top: 8px;
- }
- .error-text {
-   color: #F56C6C;
-   font-size: 12px;
-   margin-top: 5px;
-   line-height: 12px;
- }
- </style>
+<style scoped>
+.medicine-row {
+  margin-bottom: 10px;
+  padding: 10px;
+  background-color: #f5f7fa;
+  border-radius: 4px;
+}
+</style>

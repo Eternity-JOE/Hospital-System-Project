@@ -99,7 +99,7 @@ const router = createRouter({
            path: 'settlement',
            name: 'DoctorSettlement',
            component: () => import('../views/doctor/settlement.vue'),
-           meta: { title: '处理服务', role: 'doctor' }
+           meta: { title: '问诊服务', role: 'doctor' }
         },
         {
           path: 'leave',

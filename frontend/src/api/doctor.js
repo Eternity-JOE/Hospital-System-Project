@@ -17,6 +17,15 @@ export function getDoctorsByDepartment(departmentId) {
   })
 }
 
+// 获取医生个人信息（包含排班）
+export function getDoctorProfile(userId) {
+  return request({
+    url: '/doctor/profile',
+    method: 'get',
+    params: { userId }
+  })
+}
+
 // 新增医生
 export function addDoctor(data) {
   return request({

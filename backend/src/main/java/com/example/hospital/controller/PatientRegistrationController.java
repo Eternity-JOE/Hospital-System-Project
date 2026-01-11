@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.text.Collator;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.Locale;
 import java.util.*;
@@ -37,6 +38,41 @@ public class PatientRegistrationController {
         if (title.contains("主治医师")) return 2;
         if (title.contains("住院医师")) return 1;
         return 0;
+    }
+    
+    // 检查医生在指定日期是否有排班
+    private boolean isDoctorScheduled(Doctor doctor, String dateStr) {
+        if (dateStr == null || doctor.getSchedule() == null) {
+            return true; // 没有指定日期或没有排班设置，默认可用
+        }
+        
+        LocalDate date = LocalDate.parse(dateStr);
+        int dayOfWeek = date.getDayOfWeek().getValue(); // 1=周一, 7=周日
+        
+        String schedule = doctor.getSchedule();
+        
+        // 动态排班：休息日是今天往后第4天和第6天
+        if ("DYNAMIC".equals(schedule)) {
+            LocalDate today = LocalDate.now();
+            int todayDow = today.getDayOfWeek().getValue(); // 1-7
+            
+            // 计算往后第4天和第6天是星期几
+            int rest1 = ((todayDow - 1 + 4) % 7) + 1; // 往后第4天
+            int rest2 = ((todayDow - 1 + 6) % 7) + 1; // 往后第6天
+            
+            // 如果目标日期是休息日，返回false
+            return dayOfWeek != rest1 && dayOfWeek != rest2;
+        }
+        
+        // 普通医生：检查schedule字段
+        // schedule格式: "1,3,4,6,7" 表示周一、周三、周四、周六、周日上班
+        String[] workDays = schedule.split(",");
+        for (String day : workDays) {
+            if (Integer.parseInt(day.trim()) == dayOfWeek) {
+                return true;
+            }
+        }
+        return false;
     }
 
     // 获取科室列表
@@ -73,6 +109,11 @@ public class PatientRegistrationController {
         List<Map<String, Object>> result = new ArrayList<>();
         
         for (Doctor doc : doctors) {
+            // 检查医生排班
+            if (date != null && !isDoctorScheduled(doc, date)) {
+                continue; // 该日期医生不上班
+            }
+            
             // 检查医生是否请假
             if (date != null && timeSlot != null) {
                 int leaveCount = doctorLeaveMapper.checkLeaveExists(doc.getId(), date, timeSlot);
@@ -88,6 +129,7 @@ public class PatientRegistrationController {
             item.put("departmentId", doc.getDepartmentId());
             item.put("phone", doc.getPhone());
             item.put("specialty", doc.getSpecialty());
+            item.put("schedule", doc.getSchedule());
             
             Department dept = departmentMapper.selectById(doc.getDepartmentId());
             item.put("departmentName", dept != null ? dept.getName() : "-");
@@ -156,6 +198,11 @@ public class PatientRegistrationController {
         
         List<Map<String, Object>> result = new ArrayList<>();
         for (Doctor doc : doctors) {
+            // 检查医生排班
+            if (date != null && !isDoctorScheduled(doc, date)) {
+                continue; // 该日期医生不上班
+            }
+            
             if (date != null && timeSlot != null) {
                 int leaveCount = doctorLeaveMapper.checkLeaveExists(doc.getId(), date, timeSlot);
                 if (leaveCount > 0) continue;
@@ -169,6 +216,7 @@ public class PatientRegistrationController {
             item.put("titlePriority", getTitlePriority(doc.getTitle()));
             item.put("departmentId", doc.getDepartmentId());
             item.put("specialty", doc.getSpecialty());
+            item.put("schedule", doc.getSchedule());
             
             Department dept = departmentMapper.selectById(doc.getDepartmentId());
             item.put("departmentName", dept != null ? dept.getName() : "-");
@@ -212,6 +260,16 @@ public class PatientRegistrationController {
         
         LocalDate appointmentDate = LocalDate.parse(appointmentDateStr);
         
+        Doctor doctor = doctorMapper.selectById(doctorId);
+        if (doctor == null) {
+            return Result.error("医生不存在");
+        }
+        
+        // 检查医生排班
+        if (!isDoctorScheduled(doctor, appointmentDateStr)) {
+            return Result.error("该医生在此日期不出诊，请选择其他日期或医生");
+        }
+        
         int leaveCount = doctorLeaveMapper.checkLeaveExists(doctorId, appointmentDateStr, timeSlot);
         if (leaveCount > 0) {
             return Result.error("该医生在此时段已请假，请选择其他时段或医生");
@@ -225,11 +283,6 @@ public class PatientRegistrationController {
                    .eq("status", 1);
         if (registrationMapper.selectCount(checkWrapper) > 0) {
             return Result.error("您已在该时段挂过此医生的号");
-        }
-        
-        Doctor doctor = doctorMapper.selectById(doctorId);
-        if (doctor == null) {
-            return Result.error("医生不存在");
         }
         
         // 处理patientTypes数组，转换为单个整数（使用位运算）

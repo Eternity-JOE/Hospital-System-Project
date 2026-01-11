@@ -28,6 +28,45 @@ public class DoctorScheduleController {
     @Autowired
     private DoctorLeaveMapper doctorLeaveMapper;
 
+    // 获取医生今日的挂号列表（用于问诊）
+    @GetMapping("/today")
+    public Result<List<Map<String, Object>>> getTodayRegistrations(
+            @RequestParam Integer doctorId,
+            @RequestParam String date,
+            @RequestParam String timeSlot) {
+        
+        QueryWrapper<Registration> wrapper = new QueryWrapper<>();
+        wrapper.eq("doctor_id", doctorId)
+               .eq("appointment_date", date)
+               .eq("time_slot", timeSlot)
+               .orderByDesc("priority_score");
+        
+        List<Registration> registrations = registrationMapper.selectList(wrapper);
+        
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (Registration reg : registrations) {
+            Map<String, Object> item = new HashMap<>();
+            item.put("id", reg.getId());
+            item.put("patientId", reg.getPatientId());
+            item.put("appointmentDate", reg.getAppointmentDate());
+            item.put("timeSlot", reg.getTimeSlot());
+            item.put("status", reg.getStatus());
+            item.put("priorityScore", reg.getPriorityScore());
+            item.put("registrationType", reg.getRegistrationType());
+            item.put("isReturn", reg.getIsReturn());
+            
+            // 获取病人信息
+            Patient patient = patientMapper.selectById(reg.getPatientId());
+            if (patient != null) {
+                item.put("patientName", patient.getName());
+            }
+            
+            result.add(item);
+        }
+        
+        return Result.success(result);
+    }
+
     // 获取医生某周的预约安排
     @GetMapping("/week")
     public Result<Map<String, Object>> getWeekSchedule(

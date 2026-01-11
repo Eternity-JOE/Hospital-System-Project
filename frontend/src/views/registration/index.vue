@@ -18,9 +18,6 @@
           </el-space>
         </el-col>
         <el-col :span="8" style="text-align: right;">
-          <el-button type="primary" @click="handleAdd">
-            <el-icon><Plus /></el-icon> 新增挂号
-          </el-button>
           <el-button type="success" @click="showQueueDialog">
             <el-icon><List /></el-icon> 查看排队
           </el-button>
@@ -200,7 +197,7 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, List } from '@element-plus/icons-vue'
+import { List } from '@element-plus/icons-vue'
 import { getRegistrationList, addRegistration, updateRegistration, cancelRegistration, completeRegistration, markNoShow, deleteRegistration, getQueue, getSlots } from '@/api/registration'
 import { getDepartmentList } from '@/api/department'
 import { getPatientList } from '@/api/patient'

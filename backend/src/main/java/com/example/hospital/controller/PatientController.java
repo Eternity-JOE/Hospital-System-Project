@@ -76,6 +76,16 @@ public class PatientController {
         patientMapper.deleteById(id);
         return Result.success(null);
     }
+
+    // 5. 根据ID获取单个患者信息
+    @GetMapping("/{id}")
+    public Result<?> getById(@PathVariable Integer id) {
+        Patient patient = patientMapper.selectById(id);
+        if (patient == null) {
+            return Result.error("患者不存在");
+        }
+        return Result.success(patient);
+    }
 }
 
 // 病人端个人信息接口

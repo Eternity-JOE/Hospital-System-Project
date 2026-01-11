@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS `sys_doctor` (
     `department_id` INT NOT NULL COMMENT '所属科室ID',
     `phone` VARCHAR(20) DEFAULT NULL COMMENT '联系电话',
     `specialty` VARCHAR(255) DEFAULT NULL COMMENT '擅长领域',
+    `schedule` VARCHAR(255) DEFAULT NULL COMMENT '排班时间，格式：1,3,4,6,7 表示周一三四六日上班',
     `status` TINYINT DEFAULT 1 COMMENT '状态：1-在职，0-离职',
     `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',

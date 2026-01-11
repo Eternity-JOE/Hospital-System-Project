@@ -12,8 +12,12 @@ import java.time.LocalDateTime;
 public class Bill {
     @TableId(type = IdType.AUTO)
     private Integer id;          // 账单流水号
-    private Integer doctorId;    // 医生ID，和数据库doctor_id字段映射，mybatis-plus自动驼峰转下划线
+    private Integer doctorId;    // 医生ID
     private Integer patientId;   // 病人ID
+    private Integer registrationId; // 关联的挂号ID
+    private String diagnosis;    // 诊断信息
+    private String medicines;    // 药品信息JSON
+    private BigDecimal otherCost; // 其他费用
     private BigDecimal totalAmount; // 总金额
     private Integer status;      // 0=待缴费 1=已缴费
     private LocalDateTime createTime; // 创建时间
